@@ -1,15 +1,27 @@
 import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 import "./globals.css";
-import Navbar from "@/components/layout/Navbar";
-import Footer from "@/components/layout/Footer";
+import { Navbar } from "@/components/layout/Navbar";
+import { Footer } from "@/components/layout/Footer";
+import { ChatbotLauncher } from "@/components/chatbot/ChatbotLauncher";
 import { ChatWindow } from "@/components/chatbot/ChatWindow";
+import { ChatbotProvider } from "@/components/chatbot/useChatbot";
 
 const inter = Inter({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
-  title: "Service Path Technology | AI & Automation Services",
-  description: "We help businesses modernize operations through AI, chatbots, and automation.",
+  title: {
+    default: 'Service Path Technology | AI & Automation',
+    template: '%s | Service Path Technology'
+  },
+  description: 'Transform your business with AI chatbots, CRM systems, and workflow automation.',
+  keywords: ['AI chatbot', 'CRM', 'workflow automation', 'business technology'],
+  openGraph: {
+    type: 'website',
+    locale: 'en_US',
+    url: 'https://chatbot-brown-iota-53.vercel.app',
+    siteName: 'Service Path Technology',
+  }
 };
 
 export default function RootLayout({
@@ -18,14 +30,17 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" className="scroll-smooth">
-      <body className={`${inter.className} antialiased min-h-screen flex flex-col`}>
-        <Navbar />
-        <main className="flex-grow pt-16">
-          {children}
-        </main>
-        <Footer />
-        <ChatWindow />
+    <html lang="en">
+      <body className={`${inter.className} bg-slate-50 text-slate-900 antialiased flex flex-col min-h-screen`}>
+        <ChatbotProvider>
+          <Navbar />
+          <main className="flex-grow">
+            {children}
+          </main>
+          <Footer />
+          <ChatWindow />
+          <ChatbotLauncher />
+        </ChatbotProvider>
       </body>
     </html>
   );

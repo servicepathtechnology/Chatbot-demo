@@ -1,45 +1,56 @@
 'use client';
 
-import { MessageSquare } from 'lucide-react';
-import { useEffect, useState } from 'react';
+import { MessageCircle, X } from 'lucide-react';
+import { useChatbot } from './useChatbot';
+import { cn } from '@/lib/utils';
+import { useState } from 'react';
 
-interface ChatbotLauncherProps {
-  onClick: () => void;
-  isOpen: boolean;
-}
-
-export function ChatbotLauncher({ onClick, isOpen }: ChatbotLauncherProps) {
-  const [pulse, setPulse] = useState(true);
-
-  useEffect(() => {
-    // Only pulse on first load for a short duration
-    const timer = setTimeout(() => setPulse(false), 5000);
-    return () => clearTimeout(timer);
-  }, []);
-
-  if (isOpen) return null;
+export function ChatbotLauncher() {
+  const { isOpen, toggleChat, hasOpened } = useChatbot();
+  const [isHovered, setIsHovered] = useState(false);
 
   return (
-    <div className="fixed bottom-6 right-6 z-50">
-      {pulse && (
-        <span className="absolute -inset-1 rounded-full bg-primary-500 opacity-30 animate-ping"></span>
+    <div className="fixed bottom-6 right-6 z-50 flex items-center">
+      {/* Tooltip */}
+      {isHovered && !isOpen && (
+        <div className="absolute right-16 bg-slate-900 text-white text-xs px-3 py-1.5 rounded-lg whitespace-nowrap animate-fade-in pointer-events-none">
+          Chat with AI
+          {/* Tooltip triangle indicator */}
+          <div className="absolute top-1/2 -right-1 w-2 h-2 bg-slate-900 rotate-45 -translate-y-1/2" />
+        </div>
       )}
+
+      {/* Launcher Button */}
       <button
-        id="chat-launcher-btn"
-        onClick={() => {
-          setPulse(false);
-          onClick();
-        }}
-        className={`
-          relative flex items-center justify-center w-14 h-14 
-          bg-primary-600 text-white rounded-full 
-          shadow-xl hover:bg-primary-700 hover:scale-105 
-          transition-all duration-300 focus:outline-none focus:ring-4 focus:ring-primary-200
-        `}
-        aria-label="Chat with us"
-        title="Chat with us"
+        onClick={toggleChat}
+        onMouseEnter={() => setIsHovered(true)}
+        onMouseLeave={() => setIsHovered(false)}
+        aria-label={isOpen ? "Close chat" : "Chat with us"}
+        className={cn(
+          "relative w-14 h-14 rounded-full bg-indigo-600 outline-none hover:bg-indigo-700 shadow-lg shadow-indigo-500/40 flex items-center justify-center transition-all duration-300 hover:scale-110 active:scale-95",
+          isOpen ? "rotate-90" : "rotate-0"
+        )}
       >
-        <MessageSquare className="w-6 h-6" />
+        {/* Notification Badge */}
+        {!hasOpened && !isOpen && (
+          <div className="absolute -top-0.5 -right-0.5 w-3 h-3 bg-red-500 border-2 border-white rounded-full animate-pulse" />
+        )}
+
+        {/* Icons */}
+        <div className="relative w-6 h-6">
+          <MessageCircle 
+            className={cn(
+              "absolute inset-0 text-white transition-all duration-300 transform",
+              isOpen ? "rotate-90 scale-0 opacity-0" : "rotate-0 scale-100 opacity-100"
+            )}
+          />
+          <X 
+            className={cn(
+              "absolute inset-0 text-white transition-all duration-300 transform",
+              isOpen ? "-rotate-90 scale-100 opacity-100" : "rotate-0 scale-0 opacity-0"
+            )}
+          />
+        </div>
       </button>
     </div>
   );

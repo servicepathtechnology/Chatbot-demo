@@ -1,118 +1,167 @@
 'use client';
 
-import { X, Send, Bot, RotateCcw } from 'lucide-react';
-import { FormEvent, useEffect, useRef, useState } from 'react';
+import { useState, useRef, useEffect } from 'react';
+import { Bot, X, Minus, Send, CheckCircle2 } from 'lucide-react';
 import { useChatbot } from './useChatbot';
-import { ChatbotLauncher } from './ChatbotLauncher';
-import { MessageBubble } from './MessageBubble';
-import { TypingIndicator, QuickReplies, LeadConfirmation } from './ChatComponents';
+import { cn } from '@/lib/utils';
 
 export function ChatWindow() {
-  const { state, open, close, toggle, sendMessage, clearHistory } = useChatbot();
-  const [inputText, setInputText] = useState('');
+  const { isOpen, closeChat, messages, isTyping, sendMessage, activeQuickReplies } = useChatbot();
+  const [inputValue, setInputValue] = useState('');
   const messagesEndRef = useRef<HTMLDivElement>(null);
-
-  const { isOpen, messages, isTyping } = state;
 
   useEffect(() => {
     if (messagesEndRef.current) {
       messagesEndRef.current.scrollIntoView({ behavior: 'smooth' });
     }
-  }, [messages, isTyping, isOpen]);
+  }, [messages, isTyping, activeQuickReplies]);
 
-  const handleSubmit = (e: FormEvent) => {
-    e.preventDefault();
-    if (inputText.trim()) {
-      sendMessage(inputText);
-      setInputText('');
+  const handleSend = () => {
+    if (inputValue.trim()) {
+      sendMessage(inputValue);
+      setInputValue('');
     }
   };
 
-  const handleQuickReply = (text: string) => {
-    sendMessage(text);
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      handleSend();
+    }
   };
 
-  return (
-    <>
-      <ChatbotLauncher isOpen={isOpen} onClick={toggle} />
-      
-      {isOpen && (
-        <div 
-          className="fixed bottom-0 md:bottom-24 md:right-6 w-full md:w-[380px] h-[85vh] md:h-[520px] bg-white md:rounded-2xl shadow-2xl flex flex-col z-50 animate-slide-up border border-gray-100 overflow-hidden"
-        >
-          {/* Header */}
-          <div className="bg-primary-600 text-white p-4 flex justify-between items-center rounded-t-2xl shrink-0">
-            <div className="flex items-center gap-3">
-              <div className="relative">
-                <div className="bg-white/20 p-1.5 rounded-lg">
-                  <Bot className="w-6 h-6" />
-                </div>
-                <span className="absolute -bottom-1 -right-1 w-3 h-3 bg-green-400 border-2 border-primary-600 rounded-full"></span>
-              </div>
-              <div>
-                <h3 className="font-semibold leading-tight">AI Assistant</h3>
-                <p className="text-primary-100 text-xs">Service Path Technology</p>
-              </div>
-            </div>
-            <div className="flex gap-2">
-              <button 
-                onClick={clearHistory} 
-                className="p-2 hover:bg-white/10 rounded-full transition-colors"
-                title="Clear Chat History"
-              >
-                <RotateCcw className="w-4 h-4" />
-              </button>
-              <button 
-                onClick={close} 
-                className="p-2 hover:bg-white/10 rounded-full transition-colors"
-                title="Close Chat"
-              >
-                <X className="w-5 h-5" />
-              </button>
-            </div>
-          </div>
+  if (!isOpen) return null;
 
-          {/* Messages Area */}
-          <div className="flex-1 overflow-y-auto p-4 bg-gray-50 flex flex-col">
-            {messages.map((msg) => {
-              if (msg.isLeadConfirmation) {
-                return <LeadConfirmation key={msg.id} />;
-              }
+  return (
+    <div className="fixed bottom-24 right-4 md:right-6 w-[calc(100vw-32px)] md:w-[400px] h-[75vh] md:h-[600px] bg-white rounded-2xl shadow-2xl flex flex-col overflow-hidden z-50 border border-slate-200 animate-slide-up origin-bottom-right">
+      
+      {/* Header */}
+      <div className="bg-gradient-to-r from-indigo-600 to-indigo-700 px-4 py-4 flex justify-between items-center shrink-0">
+        <div className="flex items-center gap-3">
+          <div className="w-10 h-10 rounded-full bg-white/20 flex items-center justify-center relative backdrop-blur-sm">
+            <Bot className="w-6 h-6 text-white" />
+            <div className="absolute bottom-0 right-0 w-3 h-3 bg-emerald-400 border-2 border-indigo-700 rounded-full" />
+          </div>
+          <div>
+            <h3 className="text-white font-bold text-sm tracking-wide">AI Assistant</h3>
+            <p className="text-indigo-200 text-xs">Service Path Technology</p>
+          </div>
+        </div>
+        <div className="flex gap-2">
+          <button onClick={closeChat} className="p-2 text-indigo-200 hover:text-white hover:bg-white/10 rounded-lg transition-colors">
+            <Minus className="w-5 h-5" />
+          </button>
+          <button onClick={closeChat} className="p-2 text-indigo-200 hover:text-white hover:bg-white/10 rounded-lg transition-colors">
+            <X className="w-5 h-5" />
+          </button>
+        </div>
+      </div>
+
+      {/* Messages */}
+      <div className="flex-1 overflow-y-auto p-4 bg-slate-50/50 scrollbar-thin scrollbar-thumb-slate-200">
+        <div className="space-y-4">
+          {messages.map((msg) => {
+            const isUser = msg.role === 'user';
+            
+            // Special Lead Capture Card
+            if (msg.content === '__LEAD_CAPTURED__') {
               return (
-                <div key={msg.id} className="w-full flex flex-col">
-                  <MessageBubble message={msg} />
-                  {msg.quickReplies && msg.quickReplies.length > 0 && (
-                    <QuickReplies replies={msg.quickReplies} onSelect={handleQuickReply} />
-                  )}
+                <div key={msg.id} className="flex justify-start animate-fade-in">
+                  <div className="bg-emerald-50 border border-emerald-200 rounded-2xl p-4 max-w-[85%]">
+                    <div className="flex items-center gap-2 mb-2">
+                      <CheckCircle2 className="w-5 h-5 text-emerald-600" />
+                      <span className="font-bold text-emerald-900 text-sm">Got it!</span>
+                    </div>
+                    <p className="text-emerald-700 text-sm leading-relaxed">
+                      Thanks for sharing your details. Our automation experts will be in touch shortly to map out your perfect tech stack.
+                    </p>
+                  </div>
                 </div>
               );
-            })}
-            {isTyping && <TypingIndicator />}
-            <div ref={messagesEndRef} />
-          </div>
+            }
 
-          {/* Input Area */}
-          <div className="p-4 bg-white border-t border-gray-100 shrink-0">
-            <form onSubmit={handleSubmit} className="flex gap-2">
-              <input
-                type="text"
-                value={inputText}
-                onChange={(e) => setInputText(e.target.value)}
-                placeholder="Type your message..."
-                className="flex-1 bg-gray-100 border-transparent focus:bg-white focus:border-primary-500 focus:ring-2 focus:ring-primary-500 rounded-xl px-4 py-3 outline-none transition-all placeholder:text-gray-400"
-                disabled={isTyping}
-              />
+            return (
+              <div key={msg.id} className={cn("flex", isUser ? "justify-end" : "justify-start animate-fade-in")}>
+                {!isUser && (
+                  <div className="w-8 h-8 rounded-full bg-indigo-100 flex items-center justify-center shrink-0 mr-2 mt-1">
+                    <Bot className="w-5 h-5 text-indigo-600" />
+                  </div>
+                )}
+                <div 
+                  className={cn(
+                    "px-4 py-3 text-sm leading-relaxed max-w-[80%] shadow-sm",
+                    isUser 
+                      ? "bg-indigo-600 text-white rounded-2xl rounded-tr-sm" 
+                      : "bg-white text-slate-700 rounded-2xl rounded-tl-sm border border-slate-100"
+                  )}
+                >
+                  {msg.content}
+                </div>
+              </div>
+            );
+          })}
+
+          {/* Typing Indicator */}
+          {isTyping && (
+            <div className="flex justify-start animate-fade-in">
+              <div className="w-8 h-8 rounded-full bg-indigo-100 flex items-center justify-center shrink-0 mr-2">
+                <Bot className="w-5 h-5 text-indigo-600" />
+              </div>
+              <div className="bg-white border border-slate-100 rounded-2xl rounded-tl-sm px-4 py-4 flex items-center gap-1.5 shadow-sm">
+                <div className="w-1.5 h-1.5 bg-slate-400 rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
+                <div className="w-1.5 h-1.5 bg-slate-400 rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
+                <div className="w-1.5 h-1.5 bg-slate-400 rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
+              </div>
+            </div>
+          )}
+
+          <div ref={messagesEndRef} className="h-4" />
+        </div>
+      </div>
+
+      {/* Quick Replies */}
+      {!isTyping && activeQuickReplies.length > 0 && (
+        <div className="px-4 py-3 bg-white border-t border-slate-100 shrink-0">
+          <div className="flex flex-wrap gap-2">
+            {activeQuickReplies.map((reply, idx) => (
               <button
-                type="submit"
-                disabled={!inputText.trim() || isTyping}
-                className="bg-primary-600 text-white p-3 rounded-xl hover:bg-primary-700 disabled:opacity-50 disabled:hover:bg-primary-600 transition-colors shadow-sm focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500"
+                key={idx}
+                onClick={() => sendMessage(reply)}
+                className="bg-indigo-50 border border-indigo-100 hover:border-indigo-300 hover:bg-indigo-100 text-indigo-700 text-xs font-semibold px-3 py-2 rounded-full transition-all animate-fade-in"
+                style={{ animationDelay: `${idx * 50}ms` }}
               >
-                <Send className="w-5 h-5" />
+                {reply}
               </button>
-            </form>
+            ))}
           </div>
         </div>
       )}
-    </>
+
+      {/* Input */}
+      <div className="p-4 bg-white border-t border-slate-100 shrink-0">
+        <div className="flex items-end gap-2 relative">
+          <textarea
+            value={inputValue}
+            onChange={(e) => setInputValue(e.target.value)}
+            onKeyDown={handleKeyDown}
+            placeholder="Type your message..."
+            className="w-full bg-slate-50 border border-slate-200 text-slate-700 text-sm rounded-xl pl-4 pr-12 py-3 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all resize-none overflow-hidden"
+            rows={1}
+            style={{ minHeight: '44px', maxHeight: '120px' }}
+          />
+          <button
+            onClick={handleSend}
+            disabled={!inputValue.trim() || isTyping}
+            className="absolute right-2 bottom-2 w-8 h-8 bg-indigo-600 text-white rounded-lg flex items-center justify-center hover:bg-indigo-700 transition-colors disabled:opacity-50 disabled:bg-slate-300"
+          >
+            <Send className="w-4 h-4 ml-0.5" />
+          </button>
+        </div>
+        <div className="text-center mt-3">
+          <span className="text-[10px] text-slate-400 font-medium">Powered by Service Path AI</span>
+        </div>
+      </div>
+
+    </div>
   );
 }

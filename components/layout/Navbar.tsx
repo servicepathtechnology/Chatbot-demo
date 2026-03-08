@@ -1,75 +1,125 @@
 'use client';
 
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { Bot, Menu, X } from 'lucide-react';
-import { useState } from 'react';
+import { usePathname } from 'next/navigation';
+import { Zap, Menu, X } from 'lucide-react';
+import { cn } from '@/lib/utils';
+import { useChatbot } from '@/components/chatbot/useChatbot';
 
-export default function Navbar() {
-  const [isOpen, setIsOpen] = useState(false);
+const LINKS = [
+  { name: 'Home', href: '/' },
+  { name: 'Services', href: '/services' },
+  { name: 'About', href: '/about' },
+  { name: 'Contact', href: '/contact' },
+];
+
+export function Navbar() {
+  const [scrolled, setScrolled] = useState(false);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const pathname = usePathname();
+  const { toggleChat } = useChatbot();
+
+  useEffect(() => {
+    const handleScroll = () => {
+      setScrolled(window.scrollY > 10);
+    };
+    window.addEventListener('scroll', handleScroll);
+    handleScroll();
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
 
   return (
-    <nav className="fixed w-full bg-white/80 backdrop-blur-md z-40 border-b border-gray-100 transition-all duration-300">
+    <header
+      className={cn(
+        'fixed top-0 inset-x-0 z-50 transition-all duration-300',
+        scrolled ? 'bg-white/80 backdrop-blur-md border-b border-slate-200 shadow-sm py-3' : 'bg-transparent py-5'
+      )}
+    >
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex justify-between h-16 items-center">
-          <div className="flex-shrink-0 flex items-center">
-            <Link href="/" className="flex items-center gap-2 group">
-              <div className="bg-primary-600 text-white p-1.5 rounded-lg group-hover:bg-primary-700 transition-colors">
-                <Bot className="w-6 h-6" />
-              </div>
-              <span className="font-bold text-xl tracking-tight text-gray-900">
-                Service<span className="text-primary-600">Path</span>
-              </span>
-            </Link>
-          </div>
-          
-          <div className="hidden md:flex items-center space-x-8">
-            <Link href="/" className="text-gray-600 hover:text-primary-600 font-medium transition-colors">Home</Link>
-            <Link href="/services" className="text-gray-600 hover:text-primary-600 font-medium transition-colors">Services</Link>
-            <Link href="/about" className="text-gray-600 hover:text-primary-600 font-medium transition-colors">About</Link>
-            <Link href="/contact" className="text-gray-600 hover:text-primary-600 font-medium transition-colors">Contact</Link>
-          </div>
+        <div className="flex justify-between items-center">
+          {/* Logo */}
+          <Link href="/" className="flex items-center gap-2 group">
+            <div className="w-8 h-8 rounded-lg bg-indigo-600 text-white flex items-center justify-center group-hover:scale-105 transition-transform">
+              <Zap className="w-5 h-5" fill="currentColor" />
+            </div>
+            <span className={cn("text-xl tracking-tight", scrolled ? "text-slate-900" : "text-slate-900 md:text-white")}>
+              Service<span className="font-bold text-indigo-600">Path</span>
+            </span>
+          </Link>
 
+          {/* Desktop Nav */}
+          <nav className="hidden md:flex items-center gap-8">
+            {LINKS.map(link => {
+              const isActive = pathname === link.href;
+              return (
+                <Link
+                  key={link.name}
+                  href={link.href}
+                  className={cn(
+                    'text-sm transition-colors',
+                    isActive 
+                      ? 'text-indigo-600 font-semibold' 
+                      : scrolled ? 'text-slate-600 hover:text-indigo-600 font-medium' : 'text-slate-300 hover:text-white font-medium'
+                  )}
+                >
+                  {link.name}
+                </Link>
+              );
+            })}
+          </nav>
+
+          {/* Right actions */}
           <div className="hidden md:flex items-center">
-            {/* The Chat button just opens the window, but here we can just link to contact or define action. 
-                For now we keep it as a button that will trigger a global event or context, but PRD uses floating launcher for chat. */}
-            <button 
-              onClick={() => document.getElementById('chat-launcher-btn')?.click()}
-              className="bg-primary-600 hover:bg-primary-700 text-white px-5 py-2 rounded-xl font-medium transition-colors shadow-sm tracking-wide"
+            <button
+              onClick={toggleChat}
+              className="relative bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-semibold px-5 py-2.5 rounded-lg transition-all hover:scale-105 active:scale-95 group"
             >
+              <div className="absolute inset-0 rounded-lg animate-pulse-ring group-hover:hidden" />
               Chat With Us
             </button>
           </div>
-          
-          <div className="md:hidden flex items-center">
-            <button
-              onClick={() => setIsOpen(!isOpen)}
-              className="text-gray-600 hover:text-gray-900 focus:outline-none"
-            >
-              {isOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
-            </button>
-          </div>
+
+          {/* Mobile menu button */}
+          <button
+            onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+            className={cn("md:hidden p-2 rounded-lg transition-colors border", scrolled ? "text-slate-600 hover:bg-slate-100 border-transparent" : "text-white hover:bg-white/10 border-white/20")}
+          >
+            {mobileMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
+          </button>
         </div>
       </div>
 
-      {isOpen && (
-        <div className="md:hidden bg-white border-b border-gray-100 absolute w-full shadow-lg animate-slide-down">
-          <div className="px-2 pt-2 pb-4 space-y-1 sm:px-3 flex flex-col items-center">
-            <Link href="/" onClick={() => setIsOpen(false)} className="block px-3 py-2 text-base font-medium text-gray-700 hover:text-primary-600 hover:bg-gray-50 rounded-md">Home</Link>
-            <Link href="/services" onClick={() => setIsOpen(false)} className="block px-3 py-2 text-base font-medium text-gray-700 hover:text-primary-600 hover:bg-gray-50 rounded-md">Services</Link>
-            <Link href="/about" onClick={() => setIsOpen(false)} className="block px-3 py-2 text-base font-medium text-gray-700 hover:text-primary-600 hover:bg-gray-50 rounded-md">About</Link>
-            <Link href="/contact" onClick={() => setIsOpen(false)} className="block px-3 py-2 text-base font-medium text-gray-700 hover:text-primary-600 hover:bg-gray-50 rounded-md">Contact</Link>
-            <button 
+      {/* Mobile Menu */}
+      {mobileMenuOpen && (
+        <div className="md:hidden absolute top-full left-0 w-full bg-white border-b border-slate-200 shadow-xl animate-slide-down">
+          <div className="px-4 py-6 flex flex-col space-y-4">
+            {LINKS.map(link => (
+              <Link
+                key={link.name}
+                href={link.href}
+                onClick={() => setMobileMenuOpen(false)}
+                className={cn(
+                  'px-4 py-3 rounded-xl text-base font-medium transition-colors',
+                  pathname === link.href ? 'bg-indigo-50 text-indigo-600' : 'text-slate-700 hover:bg-slate-50 hover:text-indigo-600'
+                )}
+              >
+                {link.name}
+              </Link>
+            ))}
+            <hr className="border-slate-100 my-2" />
+            <button
               onClick={() => {
-                setIsOpen(false);
-                document.getElementById('chat-launcher-btn')?.click();
+                setMobileMenuOpen(false);
+                toggleChat();
               }}
-              className="mt-2 w-full text-center bg-primary-600 hover:bg-primary-700 text-white px-5 py-2 rounded-xl font-medium transition-colors"
+              className="w-full text-center bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-3 rounded-xl transition-all active:scale-95"
             >
               Chat With Us
             </button>
           </div>
         </div>
       )}
-    </nav>
+    </header>
   );
 }
